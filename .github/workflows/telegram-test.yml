@@ -1,8 +1,33 @@
 name: Telegram Test
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - run: echo 'Workflow ready'
+      - name: Send test message to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.error, sys
+          token = os.environ.get("BOT_TOKEN", "")
+          chat = os.environ.get("CHAT_ID", "")
+          if not token or not chat:
+              sys.exit("Missing BOT_TOKEN or CHAT_ID secret.")
+          url = "https://api.telegram.org/bot" + token + "/sendMessage"
+          payload = json.dumps({"chat_id": chat, "text": "Pokémon 30 Jahre Radar: Telegram-Test erfolgreich!"}).encode()
+          req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  result = json.load(response)
+          except urllib.error.HTTPError as error:
+              sys.exit("Telegram HTTP error " + str(error.code) + ". Check bot token, chat ID and /start.")
+          if not result.get("ok"):
+              sys.exit("Telegram rejected the test message.")
+          print("Telegram accepted the test message.")
+          PY
