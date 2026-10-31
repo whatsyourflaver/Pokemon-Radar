@@ -44,6 +44,33 @@ def notify(message):
   r=requests.post('https://api.telegram.org/bot'+token+'/sendMessage',json={'chat_id':chat,'text':message,'disable_web_page_preview':True},timeout=15)
   return r.ok and r.json().get('ok') is True
  except (requests.RequestException,ValueError):return False
+def hourly_report(items, output):
+ # A separate hourly Telegram heartbeat; do not confuse it with ChatGPT's research feed.
+ state_path=ROOT/'data/telegram_report.json'
+ try: state=json.loads(state_path.read_text()) if state_path.exists() else {}
+ except (ValueError,OSError):state={}
+ now=datetime.now(timezone.utc)
+ hour=now.strftime('%Y-%m-%dT%H')
+ if state.get('sent_hour')==hour:return
+ configured=bool(os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID'))
+ if not configured:
+  print('Hourly Telegram report skipped: secrets missing')
+  return
+ qualified=sum(1 for v in output.values() if v['status'] in ('lagernd','vorbestellbar'))
+ message=(f"📊 Pokémon 30 Jahre · GitHub-Stundenreport\\n"
+          f"Prüfung: {now.strftime('%d.%m.%Y %H:%M')} UTC\\n"
+          f"Überwachte Produktlinks: {len(items)}\\n"
+          f"Strukturierte Lager-/Vorbestell-Signale: {qualified}\\n"
+          f"Neue qualifizierte Produktalarme: siehe separate Sofortmeldungen.\\n"
+          f"{'⚠️ Noch keine Produktlinks in der GitHub-Watchlist – keine eigenständigen Bestandsprüfungen möglich.' if not items else 'Signale sind keine bestätigte Checkout-Verfügbarkeit.'}\\n"
+          f"Dashboard: https://whatsyourflaver.github.io/Pokemon-Radar/\\n"
+          f"Hinweis: Dieser GitHub-Bericht ist NICHT der ChatGPT-Recherchebericht.")
+ if notify(message):
+  state_path.parent.mkdir(exist_ok=True)
+  state_path.write_text(json.dumps({'sent_hour':hour,'sent_at':now.isoformat()},indent=2)+'\\n')
+  print('Hourly Telegram report delivered')
+ else:print('Hourly Telegram report delivery FAILED; will retry next scan')
+
 def main():
  items=json.loads((ROOT/'watchlist.json').read_text())
  path=ROOT/'data/status.json'
@@ -67,6 +94,7 @@ def main():
   time.sleep(1)
  path.parent.mkdir(exist_ok=True)
  path.write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
+ hourly_report(items,output)
  health={'checked':datetime.now(timezone.utc).isoformat(timespec='seconds'),'products':len(items),'telegram_configured':bool(os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID'))}
  health_path=ROOT/'docs/data/health.json'
  health_path.parent.mkdir(parents=True,exist_ok=True)
