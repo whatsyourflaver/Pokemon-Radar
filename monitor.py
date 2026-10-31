@@ -61,7 +61,7 @@ def main():
   event=(status,price,shipping) if valid else None
   if event and list(event)!=prev.get('last_alert_key'):
    total=price+shipping
-   msg=f"Pokémon 30 Jahre: {w['name']} ({record['language']})\n{w['shop']} | {status}\nGesamt: {total:.2f} EUR | UVP: {uvp:.2f} EUR | Abweichung: {(total/uvp-1)*100:+.1f}%\n{url}\nAutomatisch erkannt; vor Kauf selbst prüfen."
+   msg=f"🔴 [PRODUKTALARM · Zentrale]\nPokémon 30 Jahre: {w['name']} ({record['language']})\n{w['shop']} | {status}\nGesamt: {total:.2f} EUR | UVP: {uvp:.2f} EUR | Abweichung: {(total/uvp-1)*100:+.1f}%\n{url}\nAutomatisch erkannt; vor Kauf selbst prüfen."
    if notify(msg):record['last_alert_key']=list(event)
   output[key]=record
   time.sleep(1)
@@ -73,4 +73,3 @@ def main():
  health_path.write_text(json.dumps(health,indent=2)+'\n')
  print('Scan completed:',len(items),'products; alerts require verified watchlist entries')
 if __name__=='__main__':main()
-
