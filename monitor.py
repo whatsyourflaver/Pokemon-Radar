@@ -57,17 +57,17 @@ def hourly_report(items, output):
   print('Hourly Telegram report skipped: secrets missing')
   return
  qualified=sum(1 for v in output.values() if v['status'] in ('lagernd','vorbestellbar'))
- message=(f"📊 Pokémon 30 Jahre · GitHub-Stundenreport\\n"
-          f"Prüfung: {now.strftime('%d.%m.%Y %H:%M')} UTC\\n"
-          f"Überwachte Produktlinks: {len(items)}\\n"
-          f"Strukturierte Lager-/Vorbestell-Signale: {qualified}\\n"
-          f"Neue qualifizierte Produktalarme: siehe separate Sofortmeldungen.\\n"
-          f"{'⚠️ Noch keine Produktlinks in der GitHub-Watchlist – keine eigenständigen Bestandsprüfungen möglich.' if not items else 'Signale sind keine bestätigte Checkout-Verfügbarkeit.'}\\n"
-          f"Dashboard: https://whatsyourflaver.github.io/Pokemon-Radar/\\n"
+ message=(f"📊 Pokémon 30 Jahre · GitHub-Stundenreport\n"
+          f"Prüfung: {now.strftime('%d.%m.%Y %H:%M')} UTC\n"
+          f"Überwachte Produktlinks: {len(items)}\n"
+          f"Strukturierte Lager-/Vorbestell-Signale: {qualified}\n"
+          f"Neue qualifizierte Produktalarme: siehe separate Sofortmeldungen.\n"
+          f"{'⚠️ Noch keine Produktlinks in der GitHub-Watchlist – keine eigenständigen Bestandsprüfungen möglich.' if not items else 'Signale sind keine bestätigte Checkout-Verfügbarkeit.'}\n"
+          f"Dashboard: https://whatsyourflaver.github.io/Pokemon-Radar/\n"
           f"Hinweis: Dieser GitHub-Bericht ist NICHT der ChatGPT-Recherchebericht.")
  if notify(message):
   state_path.parent.mkdir(exist_ok=True)
-  state_path.write_text(json.dumps({'sent_hour':hour,'sent_at':now.isoformat()},indent=2)+'\\n')
+  state_path.write_text(json.dumps({'sent_hour':hour,'sent_at':now.isoformat()},indent=2)+'\n')
   print('Hourly Telegram report delivered')
  else:print('Hourly Telegram report delivery FAILED; will retry next scan')
 
