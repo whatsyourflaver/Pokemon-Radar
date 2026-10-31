@@ -3,6 +3,13 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'monitor.py'
+      - 'watchlist.json'
+      - '.github/workflows/radar.yml'
 permissions:
   contents: write
 concurrency:
@@ -34,3 +41,23 @@ jobs:
             git commit -m 'Update radar status'
             git push
           fi
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload dashboard
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+  deploy:
+    needs: scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4
