@@ -1,0 +1,56 @@
+name: Telegram Recherche Update
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Meldungsart
+        type: choice
+        options: [recherche, produktalarm, test]
+        default: recherche
+        required: true
+      message:
+        description: Gepruefter Bericht mit Quellen, ohne private Daten
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  send:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Send labelled update
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          UPDATE_KIND: ${{ inputs.kind }}
+          UPDATE_MESSAGE: ${{ inputs.message }}
+        run: |
+          python3 - <<'PY'
+          import os, json, sys, urllib.request, urllib.error
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          labels = {'recherche': 'RECHERCHE · ChatGPT', 'produktalarm': 'PRODUKTALARM · ChatGPT', 'test': 'VERBINDUNGSTEST · ChatGPT'}
+          kind = os.environ.get('UPDATE_KIND', '')
+          message = os.environ.get('UPDATE_MESSAGE', '').strip()
+          token = os.environ.get('BOT_TOKEN', '')
+          chat = os.environ.get('CHAT_ID', '')
+          if kind not in labels or not message or len(message) > 3500:
+              sys.exit('Invalid update type or message length (1-3500 characters).')
+          if not token or not chat:
+              sys.exit('Telegram secrets missing.')
+          stamp = datetime.now(ZoneInfo('Europe/Berlin')).strftime('%d.%m.%Y %H:%M %Z')
+          text = '[' + labels[kind] + ']\n' + stamp + '\n\n' + message
+          body = json.dumps({'chat_id': chat, 'text': text, 'disable_web_page_preview': True}).encode()
+          req = urllib.request.Request('https://api.telegram.org/bot' + token + '/sendMessage', data=body, headers={'Content-Type': 'application/json'})
+          try:
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  result = json.load(response)
+          except urllib.error.HTTPError as error:
+              sys.exit('Telegram HTTP error ' + str(error.code))
+          except (urllib.error.URLError, TimeoutError, ValueError):
+              sys.exit('Telegram delivery failed; no secrets logged.')
+          if result.get('ok') is not True:
+              sys.exit('Telegram rejected update.')
+          print('Telegram accepted labelled update.')
+          PY
