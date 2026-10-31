@@ -1,0 +1,40 @@
+name: ChatGPT Recherche zu Telegram (Issue Bridge)
+on:
+  issues:
+    types: [opened]
+permissions:
+  issues: read
+  contents: read
+jobs:
+  relay:
+    if: github.event.issue.user.login == 'whatsyourflaver' && startsWith(github.event.issue.title, '[RADAR-REPORT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Validate and relay authorized research report
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          python3 - <<'PY'
+          import json,os,sys,urllib.request,urllib.error
+          body=os.getenv('ISSUE_BODY','').strip()
+          if not body.startswith('POKEMON30_REPORT_V1'):
+              sys.exit('Missing expected report marker')
+          if len(body)>3200 or len(body)<35:
+              sys.exit('Invalid report length')
+          if not os.getenv('BOT_TOKEN') or not os.getenv('CHAT_ID'):
+              sys.exit('Missing Telegram secrets')
+          msg='📊 [ChatGPT-Recherche · über GitHub]\n'+body.removeprefix('POKEMON30_REPORT_V1').strip()+'\n\nQuelle: '+os.getenv('ISSUE_URL','')
+          data=json.dumps({'chat_id':os.environ['CHAT_ID'],'text':msg,'disable_web_page_preview':True}).encode('utf-8')
+          req=urllib.request.Request('https://api.telegram.org/bot'+os.environ['BOT_TOKEN']+'/sendMessage',data=data,headers={'Content-Type':'application/json'})
+          try:
+              with urllib.request.urlopen(req,timeout=20) as resp:
+                  result=json.load(resp)
+          except urllib.error.HTTPError as err:
+              sys.exit('Telegram HTTP '+str(err.code))
+          if not result.get('ok'):sys.exit('Telegram did not accept report')
+          print('Telegram accepted ChatGPT report bridge message')
+          PY
