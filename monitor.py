@@ -67,5 +67,10 @@ def main():
   time.sleep(1)
  path.parent.mkdir(exist_ok=True)
  path.write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
+ health={'checked':datetime.now(timezone.utc).isoformat(timespec='seconds'),'products':len(items),'telegram_configured':bool(os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID'))}
+ health_path=ROOT/'docs/data/health.json'
+ health_path.parent.mkdir(parents=True,exist_ok=True)
+ health_path.write_text(json.dumps(health,indent=2)+'\n')
  print('Scan completed:',len(items),'products; alerts require verified watchlist entries')
 if __name__=='__main__':main()
+
