@@ -95,7 +95,7 @@ def main():
  path.parent.mkdir(exist_ok=True)
  path.write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
  hourly_report(items,output)
- health={'checked':datetime.now(timezone.utc).isoformat(timespec='seconds'),'products':len(items),'telegram_configured':bool(os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID'))}
+ health={'checked':datetime.now(timezone.utc).isoformat(timespec='seconds'),'products':len(items),'telegram_configured':bool(os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID')),'last_telegram_report_sent':json.loads((ROOT/'data/telegram_report.json').read_text()).get('sent_at') if (ROOT/'data/telegram_report.json').exists() else None}
  health_path=ROOT/'docs/data/health.json'
  health_path.parent.mkdir(parents=True,exist_ok=True)
  health_path.write_text(json.dumps(health,indent=2)+'\n')
