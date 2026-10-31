@@ -39,7 +39,11 @@ jobs:
           git add data/status.json data/telegram_report.json docs/data/status.json docs/data/health.json
           if ! git diff --cached --quiet; then
             git commit -m 'Update radar status'
-            git push
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+              if [ "$attempt" -eq 3 ]; then echo 'Failed to publish after retries'; exit 1; fi
+              sleep 5
+            done
           fi
       - name: Configure Pages
         uses: actions/configure-pages@v5
